@@ -2,9 +2,9 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as ts from 'typescript';
 
-import {TranspileOptions} from "../models/transpile-options";
+import {CompilingOptions} from "../models/compiling-options";
 
-export function importsTransformerFactory(filePath: string, options: TranspileOptions) {
+export function importsTransformerFactory(filePath: string, options: CompilingOptions) {
     function getAbsolutePath(moduleSpecifier): string {
         if (path.isAbsolute(moduleSpecifier)) {
             return moduleSpecifier;

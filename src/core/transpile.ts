@@ -3,13 +3,13 @@ import * as fs from 'fs-extra';
 import * as ts from 'typescript';
 
 import {printDiagnostics} from "../helpers/ts-utils";
-import {TranspileOptions} from "../models/transpile-options";
+import {CompilingOptions} from "../models/compiling-options";
 import {interfacesTransformerFactory} from "../transformers/interfaces-transformer";
 import {importsTransformerFactory} from "../transformers/imports-transformer";
 import {handleError} from "../helpers/error-handler";
 import {componentTransformerFactory} from "../transformers/component-transformer";
 
-export async function transpile(filePath, options: TranspileOptions): Promise<string[]> {
+export async function transpile(filePath, options: CompilingOptions): Promise<string[]> {
     const dependencies: string[] = [];
 
     const outFilePath = path.join(options.cwd, options.outDir, filePath).slice(0, -3) + '.js';

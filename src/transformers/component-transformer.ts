@@ -2,9 +2,9 @@ import * as ts from 'typescript';
 import * as path from 'path';
 import * as fs from 'fs-extra';
 
-import {TranspileOptions} from "../models/transpile-options";
+import {CompilingOptions} from "../models/compiling-options";
 
-export function componentTransformerFactory(filePath, options: TranspileOptions, provideDependency: (dep: string) => void) {
+export function componentTransformerFactory(filePath, options: CompilingOptions, provideDependency: (dep: string) => void) {
     function handleStringLiteralProperty(property) {
         let name = property.name.getText();
 

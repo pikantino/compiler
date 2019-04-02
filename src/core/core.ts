@@ -4,33 +4,40 @@ import * as path from 'path';
 import * as glob from 'glob';
 import * as nodeWatch from 'node-watch';
 
-import {TranspileOptions} from "../models/transpile-options";
+import {CompilingOptions} from "../models/compiling-options";
 import {transpile} from "./transpile";
 import {handleError} from "../helpers/error-handler";
+import {createProgressBar} from "../helpers/create-progress-bar";
+import * as ProgressBar from 'progress';
+import {Emitter} from "../helpers/emitter";
 
-async function initialBuild(options: TranspileOptions): Promise<void> {
-    const customOptions: TranspileOptions = await updateCompilerOptions(options);
+async function initialBuild(options: CompilingOptions): Promise<void> {
+    const customOptions: CompilingOptions = await updateCompilerOptions(options);
     await build(customOptions);
 }
 
-async function build(options: TranspileOptions): Promise<{ [key: string]: string }> {
-    copyIndexFile(options.srcDir, options.outDir, options.cwd);
+async function build(options: CompilingOptions): Promise<{ [key: string]: string }> {
+    copyIndexFile(options);
 
     const files: string[] = await locateFiles(options.srcDir)
         .catch((error: NodeJS.ErrnoException) =>
             handleError(error, `Cannot locate files in ${options.srcDir}`));
 
+    const progress: ProgressBar = createProgressBar(files.length, 'Transpiling files...');
+
     const dependenciesMaps: { [key: string]: string }[] =
         await Promise.all(files.map(file =>
-            transpile(file, options).then((deps: string[]) => createDependenciesMap(file, deps))));
+            transpile(file, options)
+                .then((deps: string[]) => {
+                    progress.tick();
+                    return createDependenciesMap(file, deps)
+                })));
 
     return mergeDependenciesMaps(dependenciesMaps);
 }
 
-async function watch(options: TranspileOptions): Promise<void> {
-    const customOptions: TranspileOptions = await updateCompilerOptions(options);
-
-    console.log(customOptions);
+async function watch(options: CompilingOptions): Promise<void> {
+    const customOptions: CompilingOptions = await updateCompilerOptions(options);
 
     let dependenciesMap: { [key: string]: string } = await build(customOptions);
 
@@ -38,53 +45,55 @@ async function watch(options: TranspileOptions): Promise<void> {
         const fileName = getFilename(filePath);
 
         if (fileName.endsWith('.ts') && !fileName.endsWith('.d.ts') && !fileName.endsWith('.spec.ts')) {
-            console.log(`Changes in ${filePath}. Rebuilding...`);
+            const emitter: Emitter = new Emitter(`Changes in ${filePath}. Rebuilding...`);
 
             transpile('./' + filePath, customOptions).then((deps: string[]) => {
                 dependenciesMap = mergeDependenciesMaps([
                     dependenciesMap,
                     createDependenciesMap(filePath, deps)
                 ]);
+                emitter.done();
             });
         } else if (dependenciesMap[filePath]) {
-            const dependentFilePath: string = dependenciesMap[filePath];
+            const emitter: Emitter = new Emitter(`Changes in ${filePath}. Rebuilding...`);
 
-            console.log(`Changes in ${filePath}. Rebuilding ${dependentFilePath}...`);
+            const dependentFilePath: string = dependenciesMap[filePath];
 
             transpile('./' + dependentFilePath, customOptions).then((deps: string[]) => {
                 dependenciesMap = mergeDependenciesMaps([
                     dependenciesMap,
                     createDependenciesMap(dependentFilePath, deps)
                 ]);
+                emitter.done();
             });
         }
     });
 }
 
-function copyIndexFile(srcDir: string, outDir: string, cwd: string): void {
-    const htmlPath = path.join(srcDir, 'index.html');
-    const htmlOutPath = path.join(cwd, outDir, 'index.html');
+function copyIndexFile(options: CompilingOptions): void {
+    const htmlPath = path.join(options.srcDir, options.indexPath);
+    const htmlOutPath = path.join(options.cwd, options.outDir, 'index.html');
 
     fs.copy(htmlPath, htmlOutPath)
         .catch((error: NodeJS.ErrnoException) =>
             handleError(error, `Cannot copy index.html`, null));
 }
 
-async function updateCompilerOptions(options: TranspileOptions): Promise<TranspileOptions> {
-    const compilerOptions: ts.CompilerOptions = await readCompilerOptions(options.cwd, options.compilerOptions)
-        .catch((error: NodeJS.ErrnoException) => handleError(error, 'Cannot read tslint.json', {}));
+async function updateCompilerOptions(options: CompilingOptions): Promise<CompilingOptions> {
+    const compilerOptions: ts.CompilerOptions = await readCompilerOptions(options.cwd, options)
+        .catch((error: NodeJS.ErrnoException) => handleError(error, 'Cannot read tsconfig.json', {}));
     return {
         ...options,
         compilerOptions
     };
 }
 
-function readCompilerOptions(cwd: string, customOptions: ts.CompilerOptions): Promise<ts.CompilerOptions> {
-    return fs.readFile(path.join(cwd, './tsconfig.json'))
+function readCompilerOptions(cwd: string, options: CompilingOptions): Promise<ts.CompilerOptions> {
+    return fs.readFile(path.join(cwd, options.tsconfigPath))
         .then((file: Buffer) => {
             return Object.assign({},
                 JSON.parse(file.toString()).compilerOptions,
-                customOptions,
+                options.compilerOptions,
                 {module: ts.ModuleKind.ES2015})
         });
 }
