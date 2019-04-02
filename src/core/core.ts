@@ -7,6 +7,9 @@ import * as nodeWatch from 'node-watch';
 import {CompilingOptions} from "../models/compiling-options";
 import {transpile} from "./transpile";
 import {handleError} from "../helpers/error-handler";
+import {createProgressBar} from "../helpers/create-progress-bar";
+import * as ProgressBar from 'progress';
+import {Emitter} from "../helpers/emitter";
 
 async function initialBuild(options: CompilingOptions): Promise<void> {
     const customOptions: CompilingOptions = await updateCompilerOptions(options);
@@ -20,10 +23,15 @@ async function build(options: CompilingOptions): Promise<{ [key: string]: string
         .catch((error: NodeJS.ErrnoException) =>
             handleError(error, `Cannot locate files in ${options.srcDir}`));
 
+    const progress: ProgressBar = createProgressBar(files.length, 'Transpiling files...');
+
     const dependenciesMaps: { [key: string]: string }[] =
         await Promise.all(files.map(file =>
             transpile(file, options)
-                .then((deps: string[]) => createDependenciesMap(file, deps))));
+                .then((deps: string[]) => {
+                    progress.tick();
+                    return createDependenciesMap(file, deps)
+                })));
 
     return mergeDependenciesMaps(dependenciesMaps);
 }
@@ -37,24 +45,26 @@ async function watch(options: CompilingOptions): Promise<void> {
         const fileName = getFilename(filePath);
 
         if (fileName.endsWith('.ts') && !fileName.endsWith('.d.ts') && !fileName.endsWith('.spec.ts')) {
-            console.log(`Changes in ${filePath}. Rebuilding...`);
+            const emitter: Emitter = new Emitter(`Changes in ${filePath}. Rebuilding...`);
 
             transpile('./' + filePath, customOptions).then((deps: string[]) => {
                 dependenciesMap = mergeDependenciesMaps([
                     dependenciesMap,
                     createDependenciesMap(filePath, deps)
                 ]);
+                emitter.done();
             });
         } else if (dependenciesMap[filePath]) {
-            const dependentFilePath: string = dependenciesMap[filePath];
+            const emitter: Emitter = new Emitter(`Changes in ${filePath}. Rebuilding...`);
 
-            console.log(`Changes in ${filePath}. Rebuilding ${dependentFilePath}...`);
+            const dependentFilePath: string = dependenciesMap[filePath];
 
             transpile('./' + dependentFilePath, customOptions).then((deps: string[]) => {
                 dependenciesMap = mergeDependenciesMaps([
                     dependenciesMap,
                     createDependenciesMap(dependentFilePath, deps)
                 ]);
+                emitter.done();
             });
         }
     });

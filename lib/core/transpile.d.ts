@@ -1,2 +1,2 @@
-import { CompilerOptions } from "../models/transpile-options";
-export declare function transpile(filePath: any, options: CompilerOptions): Promise<string[]>;
+import { CompilingOptions } from "../models/compiling-options";
+export declare function transpile(filePath: any, options: CompilingOptions): Promise<string[]>;
