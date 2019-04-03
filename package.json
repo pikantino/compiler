@@ -1,6 +1,6 @@
 {
   "name": "@pikantino/compiler",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Pikantino - Typescript & Angular compiler",
   "main": "./lib/index.js",
   "bin": {
@@ -23,7 +23,7 @@
     "@types/progress": "^2.0.3"
   },
   "peerDependencies": {
-    "@pikantino/pkg": "^0.4.0"
+    "@pikantino/pkg": "^0.4.3"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

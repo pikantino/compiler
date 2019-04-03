@@ -17,7 +17,12 @@ export function importsTransformerFactory(filePath: string, options: CompilingOp
     }
 
     function isDependency(moduleSpecifier): boolean {
-        return Object.keys(options.packagesFilesMap.map).some((key: string) =>
+        return Object.keys(options.packagesFilesMap.modules).some((key: string) =>
+            moduleSpecifier.startsWith(key));
+    }
+
+    function isGlobal(moduleSpecifier: string): boolean {
+        return Object.keys(options.packagesFilesMap.globals).some((key: string) =>
             moduleSpecifier.startsWith(key));
     }
 
@@ -43,6 +48,9 @@ export function importsTransformerFactory(filePath: string, options: CompilingOp
         const visit = (node) => {
             if (ts.isImportDeclaration(node)) {
                 const moduleSpecifier = (node as any).moduleSpecifier.text; // For some reason field "text" isn't described in signature but exist in final object
+                if (isGlobal(moduleSpecifier)) {
+                    return;
+                }
                 if (isDependency(moduleSpecifier)) {
                     return createImportDeclaration(node.importClause, options.packagesFilesMap.resolvePath(moduleSpecifier));
                 }
