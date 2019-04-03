@@ -8,7 +8,7 @@ It's a tool to compile Typescript/Angular project into "ready-for-use" ES6 Modul
 [@pikantino/pkg](https://github.com/pikantino/pkg) is a peer dependency and should be installed manually.
 
 ``` 
-  npm i @pikantino/pkg @pikantino/compile --save-dev 
+  npm i @pikantino/pkg @pikantino/compiler --save-dev 
 ```
 
 ## Usage
