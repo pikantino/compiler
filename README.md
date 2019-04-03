@@ -23,7 +23,7 @@ It's a tool to compile Typescript/Angular project into "ready-for-use" ES6 Modul
 
 3. Add entry point with type="module" and ".js" extension at the end of the body of index.html with a path relative to the root of the app:
 ```
-  <script src="src/main.js" type="module">
+  <script src="src/main.js" type="module"></script>
 ```
 
 4. Run pikantino-compiler (and pass the name of new index.html if it was created or run without any arguments) 
