@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-const pkg = require('@pikantino/pkg');
+const pkg = require('../../pkg/lib/index');
 const core = require('../lib/index.js');
 
 const argv = require('yargs')

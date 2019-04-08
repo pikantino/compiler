@@ -16,7 +16,12 @@ async function initialBuild(options: CompilingOptions): Promise<void> {
     await build(customOptions);
 }
 
+async function cleanup(options: CompilingOptions): Promise<void> {
+    await fs.remove(path.join(options.cwd, options.outDir, options.srcDir));
+}
+
 async function build(options: CompilingOptions): Promise<{ [key: string]: string }> {
+    await cleanup(options);
     copyIndexFile(options);
 
     const files: string[] = await locateFiles(options.srcDir)

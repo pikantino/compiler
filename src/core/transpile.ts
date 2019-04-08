@@ -4,10 +4,10 @@ import * as ts from 'typescript';
 
 import {printDiagnostics} from "../helpers/ts-utils";
 import {CompilingOptions} from "../models/compiling-options";
-import {interfacesTransformerFactory} from "../transformers/interfaces-transformer";
 import {importsTransformerFactory} from "../transformers/imports-transformer";
 import {handleError} from "../helpers/error-handler";
 import {componentTransformerFactory} from "../transformers/component-transformer";
+import {typesTransformer} from "../transformers/types-transformer";
 
 export async function transpile(filePath, options: CompilingOptions): Promise<string[]> {
     const dependencies: string[] = [];
@@ -18,6 +18,7 @@ export async function transpile(filePath, options: CompilingOptions): Promise<st
         .catch((error: NodeJS.ErrnoException) =>
             handleError(error, `Cannot read file ${filePath}`, new Buffer('')));
 
+    const usedTypesMap: {[key: string]: boolean} = {};
 
     let result: ts.TranspileOutput;
 
@@ -26,12 +27,12 @@ export async function transpile(filePath, options: CompilingOptions): Promise<st
             compilerOptions: options.compilerOptions,
             transformers: {
                 after: [
-                    importsTransformerFactory(filePath, options)
+                    importsTransformerFactory(filePath, options, usedTypesMap)
                 ],
                 before: [
-                    interfacesTransformerFactory(),
                     componentTransformerFactory(filePath, options, (dep: string) =>
-                        dependencies.push(dep))
+                        dependencies.push(dep)),
+                    typesTransformer(usedTypesMap)
                 ]
             }
         });

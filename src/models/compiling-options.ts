@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import * as pkg from '@pikantino/pkg';
+// import * as pkg from '@pikantino/pkg';
 
 export interface CompilingOptions {
     outDir: string;
@@ -8,5 +8,5 @@ export interface CompilingOptions {
     tsconfigPath: string;
     cwd: string;
     compilerOptions?: ts.CompilerOptions;
-    packagesFilesMap?: pkg.PackagesFilesMap;
+    packagesFilesMap?: any;
 }
