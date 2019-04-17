@@ -1,6 +1,6 @@
 {
   "name": "@pikantino/compiler",
-  "version": "0.4",
+  "version": "0.4.0",
   "description": "Pikantino - Typescript & Angular compiler",
   "main": "./lib/index.js",
   "bin": {
