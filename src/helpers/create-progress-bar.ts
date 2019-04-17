@@ -1,7 +1,7 @@
 import * as ProgressBar from 'progress';
 
 export function createProgressBar(length: number, message: string): ProgressBar {
-    return new ProgressBar(`${message} [:bar] :token1 :token2`, {
+    const progress = new ProgressBar(`${message} [:bar] :token1`, {
         complete: '=',
         incomplete: ' ',
         width: 20,
@@ -9,4 +9,8 @@ export function createProgressBar(length: number, message: string): ProgressBar 
         total: length,
         callback: () => console.log(`${message} Done.`)
     });
+
+    progress.render({token1: '', token2: ''});
+
+    return progress;
 }

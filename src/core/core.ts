@@ -9,7 +9,8 @@ import {transpile} from "./transpile";
 import {handleError} from "../helpers/error-handler";
 import {createProgressBar} from "../helpers/create-progress-bar";
 import * as ProgressBar from 'progress';
-import {Emitter} from "../helpers/emitter";
+import {Emitter, Progress} from "../helpers/emitter";
+import {processStyles} from "../helpers/styles-processor";
 
 async function initialBuild(options: CompilingOptions): Promise<void> {
     const customOptions: CompilingOptions = await updateCompilerOptions(options);
@@ -22,23 +23,30 @@ async function cleanup(options: CompilingOptions): Promise<void> {
 
 async function build(options: CompilingOptions): Promise<{ [key: string]: string }> {
     await cleanup(options);
+
     copyIndexFile(options);
+    copyFavicon(options);
+    copyAssets(options);
+
+    buildStyles(options);
 
     const files: string[] = await locateFiles(options.srcDir)
         .catch((error: NodeJS.ErrnoException) =>
             handleError(error, `Cannot locate files in ${options.srcDir}`));
 
-    const progress: ProgressBar = createProgressBar(files.length, 'Transpiling files...');
+    // const progress: ProgressBar = createProgressBar(files.length, 'Transpiling files...');
+    const progress: Progress = new Progress('Transpiling files...', 'Done', files.length);
 
     const dependenciesMaps: { [key: string]: string }[] =
-        await Promise.all(files.map(file =>
-            transpile(file, options)
+        await Promise.all(files.map(file => {
+            return transpile(file, options)
                 .then((deps: string[]) => {
-                    progress.tick();
+                    progress.tick(file.slice(-100));
                     return createDependenciesMap(file, deps)
-                })));
+                });
+        }));
 
-    return mergeDependenciesMaps(dependenciesMaps);
+    return mergeDependenciesMaps(dependenciesMaps); // TODO add styles and html as dependencies map
 }
 
 async function watch(options: CompilingOptions): Promise<void> {
@@ -82,6 +90,30 @@ function copyIndexFile(options: CompilingOptions): void {
     fs.copy(htmlPath, htmlOutPath)
         .catch((error: NodeJS.ErrnoException) =>
             handleError(error, `Cannot copy index.html`, null));
+}
+
+async function buildStyles(options: CompilingOptions): Promise<void> { // TODO styles in config
+    const filePath = path.join(options.cwd, options.srcDir, 'app', 'styles', 'index.scss');
+    const outFileDit = path.join(options.cwd, options.outDir, options.srcDir, 'styles.css');
+
+    fs.outputFileSync(outFileDit, processStyles(options, filePath, outFileDit));
+}
+
+function copyAssets(options: CompilingOptions): void { // TODO assets folder to settings
+    const assetsFolderPath = path.join(options.cwd, options.srcDir, 'assets');
+    const assetsDistFolderPath = path.join(options.cwd, options.outDir, options.srcDir, 'assets');
+    fs.copy(assetsFolderPath, assetsDistFolderPath)
+        .catch((error: NodeJS.ErrnoException) =>
+            handleError(error, `Cannot copy assets folder`, null));
+}
+
+async function copyFavicon(options: CompilingOptions): Promise<void> {
+    const faviconPath = path.join(options.cwd, options.srcDir, 'favicon.ico');
+    const iconExists: boolean = await fs.pathExists(faviconPath);
+
+    if (iconExists) {
+        fs.copy(faviconPath, path.join(options.cwd, options.outDir, 'favicon.icon'));
+    }
 }
 
 async function updateCompilerOptions(options: CompilingOptions): Promise<CompilingOptions> {

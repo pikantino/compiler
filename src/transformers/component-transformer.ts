@@ -1,13 +1,9 @@
 import * as ts from 'typescript';
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import * as sass from 'node-sass';
-import * as postcss from 'postcss';
-import * as postcssUrl from 'postcss-url';
 
 import {CompilingOptions} from "../models/compiling-options";
-
-let count = 0;
+import {processStyles} from "../helpers/styles-processor";
 
 export function componentTransformerFactory(filePath, options: CompilingOptions, provideDependency: (dep: string) => void) {
     function handleStringLiteralProperty(property) {
@@ -26,16 +22,6 @@ export function componentTransformerFactory(filePath, options: CompilingOptions,
 
     }
 
-    function resolveImportPath(url: string, prev: string): { file: string } {
-        let resolvedUrl: string = url;
-        if (url.startsWith('~')) {
-            resolvedUrl = path.join(options.cwd, url.slice(1));
-        }
-        return {
-            file: resolvedUrl
-        };
-    }
-
     function handleArrayProperty(property) {
         const name = property.name.getText();
 
@@ -45,33 +31,12 @@ export function componentTransformerFactory(filePath, options: CompilingOptions,
             property.initializer.forEachChild((value) => {
                 const text = value.getText().slice(1, -1);
                 const styleUrl = path.relative(options.cwd, path.join(filePath, '../', text));
-                const compiled = sass.renderSync({file: styleUrl, importer: resolveImportPath});
-                const css = compiled.css.toString(); // TODO
-                const output = postcss()
-                    .use(postcssUrl({
-                        url: "rebase"
-                    }))
-                    .process(css, {
-                        from: styleUrl,
-                        to: "dist/index.css"
-                    });
-
-                if (count === 0) {
-
-                    const regex = /url\(['"](.*?)['"]\)/gm;
-
-                    const result = css.match(regex);
-
-                    if (result) {
-                        console.log(filePath);
-                        count += 1;
-                        console.log(css);
-                    }
-                }
+                const rebasedUrl = path.join(options.cwd, options.outDir, filePath, '../', text);
+                const output = processStyles(options, styleUrl, rebasedUrl);
 
                 provideDependency(styleUrl);
 
-                array.push(ts.createLiteral(css));
+                array.push(ts.createLiteral(output));
             });
 
             return ts.createPropertyAssignment('styles', ts.createArrayLiteral(array, true));
