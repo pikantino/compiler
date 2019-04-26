@@ -1,5 +1,4 @@
 import * as ts from 'typescript';
-// import * as pkg from '@pikantino/pkg';
 
 export interface CompilingOptions {
     outDir: string;

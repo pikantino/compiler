@@ -1,6 +1,6 @@
 {
   "name": "@pikantino/compiler",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Pikantino - Typescript & Angular compiler",
   "main": "./lib/index.js",
   "bin": {
@@ -10,6 +10,8 @@
     "lib": "lib"
   },
   "dependencies": {
+    "@pikantino/pkg": "file:../pkg",
+    "@pikantino/toolkit": "file:../toolkit",
     "fs-extra": "^7.0.1",
     "glob": "^7.1.3",
     "node-sass": "^4.11.0",
@@ -25,9 +27,6 @@
     "@types/node": "^11.12.2",
     "@types/node-sass": "^4.11.0",
     "@types/progress": "^2.0.3"
-  },
-  "peerDependencies": {
-    "@pikantino/pkg": "^0.4.3"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
